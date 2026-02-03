@@ -306,6 +306,7 @@ async def audio_separations(
     file: UploadFile = File(...),
     model: str = Form("mlx-community/sam-audio-large-fp16"),
     description: str = Form("speech"),
+    separation_mode: str = Form("long"),
     method: str = Form("midpoint"),
     steps: int = Form(16),
 ):
@@ -315,6 +316,7 @@ async def audio_separations(
         file: Audio file to process
         model: SAM Audio model name (default: mlx-community/sam-audio-large-fp16)
         description: Text description of what to separate (e.g., "speech", "guitar", "drums")
+        separation_mode: "short" or "long" (default: long)
         method: ODE solver method - "midpoint" or "euler" (default: midpoint)
         steps: Number of ODE steps - 2, 4, 8, 16, or 32 (default: 16)
 
@@ -351,15 +353,31 @@ async def audio_separations(
         step_size = 2 / (steps * 2)  # e.g., 16 steps -> 2/32 = 0.0625
         ode_opt = {"method": method, "step_size": step_size}
 
-        # Separate audio
-        result = SAM_MODEL.separate_long(
-            audios=batch.audios,
-            descriptions=batch.descriptions,
-            anchor_ids=batch.anchor_ids,
-            anchor_alignment=batch.anchor_alignment,
-            ode_opt=ode_opt,
-            ode_decode_chunk_size=50,
-        )
+        if separation_mode == "short":
+            result = SAM_MODEL.separate(
+                audios=batch.audios,
+                descriptions=batch.descriptions,
+                sizes=batch.sizes,
+                anchor_ids=batch.anchor_ids,
+                anchor_alignment=batch.anchor_alignment,
+                audio_pad_mask=batch.audio_pad_mask,
+                ode_opt=ode_opt,
+                ode_decode_chunk_size=50,
+            )
+        elif separation_mode == "long":
+            result = SAM_MODEL.separate_long(
+                audios=batch.audios,
+                descriptions=batch.descriptions,
+                anchor_ids=batch.anchor_ids,
+                anchor_alignment=batch.anchor_alignment,
+                ode_opt=ode_opt,
+                ode_decode_chunk_size=50,
+            )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid separation_mode. Use 'short' or 'long'.",
+            )
 
         mx.clear_cache()
 

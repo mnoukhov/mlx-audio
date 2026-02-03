@@ -20,6 +20,7 @@ export default function AudioSeparationPage() {
   const [model, setModel] = useState("mlx-community/sam-audio-large")
   const [precision, setPrecision] = useState("fp16")
   const [description, setDescription] = useState("speech")
+  const [separationMode, setSeparationMode] = useState("long")
   const [method, setMethod] = useState("midpoint")
   const [steps, setSteps] = useState(16)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -202,6 +203,7 @@ export default function AudioSeparationPage() {
     formData.append("file", uploadedFile)
     formData.append("model", fullModelName)
     formData.append("description", description)
+    formData.append("separation_mode", separationMode)
     formData.append("method", method)
     formData.append("steps", steps.toString())
 
@@ -485,6 +487,25 @@ export default function AudioSeparationPage() {
               </select>
               <ChevronDown className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
+          </div>
+
+          {/* Chunk Processing Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-2">Process in Chunks</label>
+            <div className="relative">
+              <select
+                value={separationMode}
+                onChange={(e) => setSeparationMode(e.target.value)}
+                className="w-full appearance-none rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 pr-8 text-sm bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              >
+                <option value="short">One Single Pass (Slower)</option>
+                <option value="long">Chunks of 10s (Faster)</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
+            </div>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              10-second chunks use 3 seconds of overlap and cross-fade to stitch them back together.
+            </p>
           </div>
 
           {/* Steps Selection */}
